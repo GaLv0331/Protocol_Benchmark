@@ -2,6 +2,7 @@
 Comparing throughput, latency, packet integrity and CPU load across UART, SPI and I2C between different architechtures.
 
 Boards Used:
+
             1] STM32F407VGT6         (ARM)
             
             2] Aries.V2 (THEJAS32)   (RISC-V)
