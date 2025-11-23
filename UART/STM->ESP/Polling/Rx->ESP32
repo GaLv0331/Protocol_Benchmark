@@ -1,1 +1,51 @@
+#include <stdio.h>
+#include <string.h>
 
+#define RX_PIN 16
+#define TX_PIN 17
+
+#define PAYLOAD_SIZE 1014
+#define TOTAL_PACKET_SIZE 1024
+
+#define PACKET_SIZE 4
+
+typedef struct __attribute__((packed, aligned(1))){
+  uint16_t    start_of_frame;
+  uint16_t    length_of_frame;
+  uint8_t     payload[PAYLOAD_SIZE];
+  uint32_t    crc32_checksum;
+  uint16_t    end_of_frame;
+}dataPacket_t;
+
+dataPacket_t packet;
+
+char rxBuff[PACKET_SIZE];
+
+void throughput(void);
+
+void setup(){
+  Serial2.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);
+  while(!Serial2);
+  Serial.begin(115200);
+}
+
+void loop(){
+      int received = Serial2.readBytes(rxBuff, sizeof(char)*PACKET_SIZE);
+        Serial2.write(rxBuff, sizeof(char)*PACKET_SIZE); 
+        printf("\nReceived: %s", rxBuff);
+}
+
+void throughput(void){
+  while(Serial2.available()<TOTAL_PACKET_SIZE){
+      int received = Serial2.readBytes((uint8_t *)&packet, sizeof(dataPacket_t));
+      if (received == sizeof(dataPacket_t)) {
+        Serial.println("\n=====Packet Throughput Test=====");
+        Serial.println("\n=====Packet Recevied=====");
+        Serial.print("SOF: ");  Serial.println(packet.start_of_frame, HEX);
+        Serial.print("Length: "); Serial.println(packet.length_of_frame);
+        Serial.print("CRC32: "); Serial.println(packet.crc32_checksum, HEX);
+        Serial.print("EOF: ");  Serial.println(packet.end_of_frame, HEX);
+        Serial.print("");
+      } 
+  }  
+}
