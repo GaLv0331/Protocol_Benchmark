@@ -13,4 +13,10 @@ Boards Used:
 
             1] STM32F407VGT6         (ARM)           
             3] ESP32-WROOM-32        (Xtensa)
+            
+Packet Inforamtion:
 
+            Packet Size: 1KB, 10KB, 100KB
+            Packet Format: [start of frame | length of frame | payload |   crc32   | end of frame]
+                           [      2bytes   |        2bytes   | X bytes |  4 bytes  |    2 bytes  ]
+            
