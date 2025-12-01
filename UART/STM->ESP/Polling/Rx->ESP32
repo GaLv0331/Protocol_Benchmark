@@ -31,8 +31,10 @@ void setup(){
 
 void loop(){
       int received = Serial2.readBytes(rxBuff, sizeof(char)*PACKET_SIZE);
+      if(received == PACKET_SIZE){ 
         Serial2.write(rxBuff, sizeof(char)*PACKET_SIZE); 
-        printf("\nReceived: %s", rxBuff);
+        Serial.print("\nReceived: "); Serial.println((int)rxBuff);
+      }
 }
 
 void throughput(void){
