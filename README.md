@@ -19,4 +19,7 @@ Packet Inforamtion:
             Packet Size: 1KB, 10KB, 100KB
             Packet Format: [start of frame | length of frame | payload |   crc32   | end of frame]
                            [      2bytes   |        2bytes   | X bytes |  4 bytes  |    2 bytes  ]
+* to edit the part
+
+
             
