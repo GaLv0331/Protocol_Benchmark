@@ -46,13 +46,14 @@ typedef struct __attribute__((packed)){
 	uint16_t 	end_of_frame;				//2 byte
 
 }dataPacket_t;
-
+/* ========================================================== */
 #define PACKET_SIZE 4
 
 typedef struct __attribute__((packed)){
 	float roundTripTime;
 	float latency;
 }latency_t;
+/* ========================================================== */
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -74,9 +75,11 @@ UART_HandleTypeDef huart4;
 uint32_t startCount = 0, endCount = 0;
 float time = 0, throughput_Mbps = 0;
 dataPacket_t packet;
-latency_t info[5];
+latency_t info[20];
 float roundTripTime, latency, minLatency, maxLatency, avgLatency, jitter;
 uint32_t count = 0, echoMismatch = 0;
+/* ============================================ */
+char txBuff[PACKET_SIZE], rxBuff[PACKET_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -139,29 +142,29 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  int choice;
+  choice = 2;
+//	  while(count!=MAX_TEST){
+	  switch(choice){
+	  case 1:
+			  testThroughput();
+			  break;
+	  case 2:
+			  testLatency();
+			  break;
+	  case 3:
+			  testCPULoad();
+			  break;
+	  case 4:
+			  testIntegrity();
+			  break;
+	  case 5:
+			  testStressRun();
+			  break;
+	  }
   while (1)
   {
-	  int choice;
-	  choice = 2;
-	  while(count!=MAX_TEST){
-		  switch(choice){
-		  case 1:
-				  testThroughput();
-				  break;
-		  case 2:
-				  testLatency();
-				  break;
-		  case 3:
-				  testCPULoad();
-				  break;
-		  case 4:
-				  testIntegrity();
-				  break;
-		  case 5:
-				  testStressRun();
-				  break;
-		  }
-	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -339,7 +342,7 @@ static void fillPacket (dataPacket_t *packet){
 
 static void payloadFill(uint8_t *payload, uint16_t size){
 	for(int i=0; i<size; i++){
-		payload[i] = i & 0xFF;
+		payload[i] = i & 0xAF;
 	}
 }
 
@@ -358,47 +361,51 @@ static void testThroughput(void){
 
 static void testLatency(void){
 
-	startCount = DWT_GetCycles();
+	for(int i=0; i<20; i++){
+		DWT->CYCCNT = 0;
+		startCount = DWT_GetCycles();
 
-	char txBuff[PACKET_SIZE];
-	payloadFill((uint8_t *)txBuff, PACKET_SIZE);
+		//char txBuff[PACKET_SIZE];
+		payloadFill((uint8_t *)txBuff, PACKET_SIZE);
 
-	char rxBuff[PACKET_SIZE] = {0};
+		//char rxBuff[PACKET_SIZE] = {0};
+		memset(rxBuff, 0, sizeof(char)*PACKET_SIZE);
 
-	HAL_UART_Transmit(&huart4, (uint8_t *)txBuff, sizeof(txBuff), 10);
-	while(HAL_UART_GetState(&huart4)!=HAL_UART_STATE_READY);
-	HAL_UART_Receive(&huart4, (uint8_t *)rxBuff, sizeof(rxBuff), 10);
-	while(HAL_UART_GetState(&huart4)!=HAL_UART_STATE_READY);
-	endCount = DWT_GetCycles();
+		HAL_UART_Transmit(&huart4, (uint8_t *)txBuff, sizeof(txBuff), 100);
+		while(HAL_UART_GetState(&huart4)!=HAL_UART_STATE_READY);
+		HAL_UART_Receive(&huart4, (uint8_t *)rxBuff, sizeof(rxBuff), 100);
+		while(HAL_UART_GetState(&huart4)!=HAL_UART_STATE_READY);
+		endCount = DWT_GetCycles();
 
-	if(strcmp(txBuff, rxBuff)!=0){
-		echoMismatch++;
-	}
-	memset(rxBuff, 0, sizeof(char)*PACKET_SIZE);
-	roundTripTime = ((float)(endCount - startCount)/SystemCoreClock)*10e5;
-
-	latency = roundTripTime/2;
-
-	info[count].roundTripTime = roundTripTime;
-	info[count].latency = latency;
-	count++;
-	if(count == MAX_TEST){
-		minLatency = info[0].latency;
-		maxLatency = info[0].latency;
-		avgLatency = info[0].latency;
-		for(int i=1; i<MAX_TEST; i++){
-			avgLatency +=  info[i].latency;
-			if(minLatency>info[i].latency){
-				minLatency = info[i].latency;
-			}
-			if(maxLatency<info[i].latency){
-				maxLatency = info[i].latency;
-			}
+		if(strcmp(txBuff, rxBuff)!=0){
+			echoMismatch++;
+			continue;
 		}
-		avgLatency /= MAX_TEST;
-		jitter = maxLatency - minLatency;
+		roundTripTime = ((float)(endCount - startCount)/SystemCoreClock)*10e5;
+
+		latency = roundTripTime/2;
+
+		info[count].roundTripTime = roundTripTime;
+		info[count].latency = latency;
+		count++;
+		if(count == MAX_TEST){
+			minLatency = info[0].latency;
+			maxLatency = info[0].latency;
+			avgLatency = info[0].latency;
+			for(int i=1; i<MAX_TEST; i++){
+				avgLatency +=  info[i].latency;
+				if(minLatency>info[i].latency){
+					minLatency = info[i].latency;
+				}
+				if(maxLatency<info[i].latency){
+					maxLatency = info[i].latency;
+				}
+			}
+			avgLatency /= MAX_TEST;
+			jitter = maxLatency - minLatency;
+		}
+		HAL_Delay(3000);
 	}
-	HAL_Delay(3000);
 }
 
 static void testCPULoad(void){}
@@ -436,4 +443,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
